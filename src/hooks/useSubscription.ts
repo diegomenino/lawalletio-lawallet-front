@@ -34,29 +34,35 @@ export const useSubscription = ({
       setSubscription(newSubscription)
       return
     }
-  }, [subscription, ndk, enabled])
+  }, [ndk])
 
   const stopSubscription = (sub: NDKSubscription) => {
     sub?.stop()
     sub?.removeAllListeners()
+    setSubscription(undefined)
   }
 
   useEffect(() => {
-    if (enabled) {
+    if (enabled && !subscription) {
       if (events.length) setEvents([])
       startSubscription()
     }
-  }, [enabled, ndk])
+
+    return () => {
+      if (subscription) stopSubscription(subscription)
+    }
+  }, [enabled, subscription, ndk])
 
   useEffect(() => {
-    if (subscription && enabled) {
-      const readEvents = subscription?.on('event', async (event: NDKEvent) =>
+    if (subscription)
+      subscription?.on('event', async (event: NDKEvent) =>
         setEvents(prev => [...prev, event])
       )
 
-      return () => stopSubscription(readEvents)
+    return () => {
+      if (subscription) subscription.off('event')
     }
-  }, [subscription, enabled])
+  }, [subscription])
 
   return {
     subscription,
